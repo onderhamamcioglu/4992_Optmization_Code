@@ -2,14 +2,15 @@ from ortools.sat.python import cp_model
 
 model = cp_model.CpModel()
 
-# //TODO INPUT AND PARAMETERS, NURSE NAMES CAN BE MATCHED WITH IDS?
+# //TODO JSON INPUT AND PARAMETERS, NURSE NAMES CAN BE MATCHED WITH IDS?
 
 # indices
-num_nurses = 10 #number of available nurses
+num_nurses = 10 #number of available nurses //TODO len(nurses[])
 num_shifts = 3  #number of shifts in a day
 
 shifts = ["Morning", "Evening", "Night"] #names of shifts
-shift_hours = [8, 8, 8] #how many hours does a shift last
+
+shift_hours = [8, 8, 8] #how many hours does a shift last //TODO = (24 / len(shifts[]))
 
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] #literally just names of days in a week
 num_days = len(days) #a week 
