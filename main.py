@@ -5,7 +5,7 @@ model = cp_model.CpModel()
 # //TODO JSON INPUT AND PARAMETERS, NURSE NAMES CAN BE MATCHED WITH IDS?
 
 # indices
-num_nurses = 10 #number of available nurses //TODO len(nurses[])
+num_nurses = int(input("Number of working nurses: ")) #number of available nurses //TODO len(nurses[])
 num_shifts = 3  #number of shifts in a day
 
 shifts = ["Morning", "Evening", "Night"] #names of shifts
