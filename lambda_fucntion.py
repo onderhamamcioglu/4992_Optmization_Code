@@ -1,13 +1,54 @@
 import json
+import boto3
+from boto3.dynamodb.types import TypeDeserializer
+import decimal
 from ortools.sat.python import cp_model
-import main
 
 
-def lambda_handler():
-    input = '''{\"min_days_off\": \"4\", \"demand\": {\"Evening\": \"3\", \"Night\": \"4\", \"Morning\": \"2\"}, \"deptName\": \"ER\", \"num_of_shift_days\": \"7\", \"num_of_shifts\": \"3\", \"min_weekend_off_days\": \"2\", \"min_night_shifts\": \"4\", \"max_working_hours\": \"200\", \"headNurse\": \"demo-at-mail.com\", \"max_night_shifts\": \"6\", \"max_subsequent_working_days\": \"5\", \"min_working_hours\": \"120\", \"max_consecutive_nights\": \"4\", \"hospitalName\": \"ABC Hospital\", \"names\": [\"Emma\", \"Olivia\", \"Ava\", \"Isabella\", \"Sophia\", \"Mia\", \"Charlotte\", \"Amelia\", \"Harper\", \"Evelyn\",
-\"Abigail\",
-\"Emily\"], \"max_inexperienced_nurses\": \"3\"}
-'''
+class DecimalEncoder(json.JSONEncoder):  # DynamoDB Data to JSON
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            return str(o)
+        return super(DecimalEncoder, self).default(o)
+
+
+################################################################################ GET VARIABLES JSON FROM DYNAMODB
+
+
+def lambda_handler(event, context):
+    request_body = json.loads(event['body'])
+    head_nurse = request_body['headNurse']
+
+    # Create a DynamoDB client
+    dynamodb = boto3.client('dynamodb')
+
+    # Retrieve data from DynamoDB
+    response = dynamodb.get_item(
+        TableName='variables',
+        Key={
+            'headNurse': {'S': head_nurse}
+        }
+    )
+
+    # Check if the item exists in the response
+    if 'Item' not in response:
+        return {
+            'statusCode': 404,
+            'body': 'Item not found'
+        }
+
+    # Deserialize DynamoDB response
+    deserializer = boto3.dynamodb.types.TypeDeserializer()
+    item = response['Item']
+    deserialized_item = {}
+
+    for key, value in item.items():
+        deserialized_item[key] = deserializer.deserialize(value)
+
+    # Convert data to JSON using custom encoder
+    input = json.dumps(deserialized_item, cls=DecimalEncoder)
+
+    ############################################################################ Create Schedule
 
     json_input = json.loads(input)
 
@@ -38,7 +79,6 @@ def lambda_handler():
         shift_hours = [12, 12]
 
     days = []
-
     for i in range(1, num_days + 1):
         days.append(str(i))
     # -------------------------------------------
@@ -206,13 +246,15 @@ def lambda_handler():
         }
 
     json_result = json.dumps(result, indent=4)
-    print(json_result)
+
+    ################################################################################ Return Schedule
 
     return {
         'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+            'Access-Control-Allow-Methods': 'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'
+        },
         'body': json_result
     }
-
-
-if __name__ == '__main__':
-    main.lambda_handler()
