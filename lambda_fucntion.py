@@ -16,7 +16,7 @@ class DecimalEncoder(json.JSONEncoder):  # DynamoDB Data to JSON
 
 
 def lambda_handler(event, context):
-    request_body = json.loads(event['body'])
+    request_body = event
     head_nurse = request_body['headNurse']
 
     # Create a DynamoDB client
@@ -34,6 +34,11 @@ def lambda_handler(event, context):
     if 'Item' not in response:
         return {
             'statusCode': 404,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+                'Access-Control-Allow-Methods': 'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'
+            },
             'body': 'Item not found'
         }
 
@@ -72,8 +77,7 @@ def lambda_handler(event, context):
     # Generate some variables according to inputs
     num_nurses = len(nurses)
     if (num_shifts == 3):
-        shifts = ["Morning", "Evening", "Night"]
-        shift_hours = [8, 8, 8]
+        shifts = ["Morning", "Evening", "Night"]        shift_hours = [8, 8, 8]
     if (num_shifts == 2):
         shifts = ["Morning", "Night"]
         shift_hours = [12, 12]
@@ -217,6 +221,7 @@ def lambda_handler(event, context):
             "deptName": f"{dept_name}",
             "isFound": True,
             "num_of_shifts": f"{num_shifts}",
+            "num_of_shift_days": f"{num_days}",
             "nurses": []
         }
         for nurse in range(num_nurses):
@@ -245,9 +250,13 @@ def lambda_handler(event, context):
             "nurses": []
         }
 
-    json_result = json.dumps(result, indent=4)
+    json_result = json.dumps(result)
 
-    ################################################################################ Return Schedule
+    ############################################################################ Return Schedule
+
+    dynamodb2 = boto3.resource('dynamodb')
+    table_sol = dynamodb2.Table('solutions')
+    table_sol.put_item(Item=result)
 
     return {
         'statusCode': 200,
